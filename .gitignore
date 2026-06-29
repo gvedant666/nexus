@@ -34,5 +34,7 @@ Makefile
 cmake_install.cmake
 
 # CPM Package Manager downloaded modules
-/cmake/CPM_modules/
+# CPM catch-all
+**/CPM_modules/
 .cpmcache/
+cmake/CPM_modules/
