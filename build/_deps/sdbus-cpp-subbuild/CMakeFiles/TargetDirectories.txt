@@ -1,3 +1,0 @@
-/home/vedant/Code/nexus/build/_deps/sdbus-cpp-subbuild/CMakeFiles/sdbus-cpp-populate.dir
-/home/vedant/Code/nexus/build/_deps/sdbus-cpp-subbuild/CMakeFiles/edit_cache.dir
-/home/vedant/Code/nexus/build/_deps/sdbus-cpp-subbuild/CMakeFiles/rebuild_cache.dir
