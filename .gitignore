@@ -21,20 +21,28 @@
 *.so.*
 *.dylib
 
-# Executables
+# Executables & Project Binaries
 *.exe
 *.out
 *.app
+nexus
 
-# Build directories and generated build systems
-[Bb]uild/
-[Cc]m[Aa]ke[Cc]ache.txt
+# Build directories (Explicit paths to prevent bracket parsing bugs)
+build/
+Build/
+build/**
+Build/**
+
+# Generated build systems and artifacts
+CMakeCache.txt
+cmake_cache.txt
 CMakeFiles/
 Makefile
 cmake_install.cmake
 
-# CPM Package Manager downloaded modules
-# CPM catch-all
+# CPM & FetchContent Package Manager artifacts
 **/CPM_modules/
+**/.cpmcache/
+**/_deps/
 .cpmcache/
 cmake/CPM_modules/
