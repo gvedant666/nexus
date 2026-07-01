@@ -50,52 +50,9 @@ NetworkSandbox::~NetworkSandbox()
     // This is the critical step that returns the 'phy' radio back to the root OS pool!
     SystemUtils::executeCommand("ip netns del " + namespaceName + " 2>/dev/null");
 
-    // Note: We intentionally do NOT rmmod mac80211_hwsim here.
-    // If machine_a unloads it, it would instantly destroy machine_b's radios too!
+    SystemUtils::executeCommand("rmmod mac80211_hwsim 2>/dev/null");
 
     std::cout << "[Library] Sandbox " << namespaceName << " safely destroyed." << std::endl;
-}
-
-bool NetworkSandbox::configureNetworkManagerExclusions()
-{
-    const std::string confFile = "/etc/NetworkManager/conf.d/80-ignore-hwsim.conf";
-
-    // Create a confFile or check if it already exists
-    if (std::ifstream checkFile(confFile); checkFile.good())
-    {
-        std::cout << "[Library] 80-ignore-hwsim already exist" << std::endl;
-        return true;
-    }
-
-    // Write the ignore rules to the NetworkManager configuration
-    std::ofstream outFile(confFile);
-    if (!outFile.is_open())
-    {
-        std::cerr << "[-] Error: Must run as root, run the bellow command\nsudo ./nexus" << std::endl;
-        return false;
-    }
-
-    outFile << "[device-hwsim]\n";
-    outFile << "match-device=driver:mac80211_hwsim\n";
-    outFile << "managed=0\n\n";
-
-    outFile << "[keyfile]\n";
-    outFile << "unmanaged-devices=driver:mac80211_hwsim\n";
-    outFile.close();
-
-    outFile << "[device-hwsim]\n";
-    outFile << "match-device=driver:mac80211_hwsim\n";
-    outFile << "managed=0\n";
-    outFile.close();
-
-    std::cout << "[Library] Restarting NetworkManager" << std::endl;
-    SystemUtils::executeCommand("systemctl restart NetworkManager");
-
-    // Give NetworkManager 3 seconds to fully reboot before we start spawning radios
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-    std::cout << "[Library] NetworkManager rebooted" << std::endl;
-
-    return true;
 }
 
 bool NetworkSandbox::setupEnvironment()
@@ -214,3 +171,47 @@ bool NetworkSandbox::setupEnvironment()
 
     return true;
 }
+
+
+bool NetworkSandbox::configureNetworkManagerExclusions()
+{
+    const std::string confFile = "/etc/NetworkManager/conf.d/80-ignore-hwsim.conf";
+
+    // Create a confFile or check if it already exists
+    if (std::ifstream checkFile(confFile); checkFile.good())
+    {
+        std::cout << "[Library] 80-ignore-hwsim already exist" << std::endl;
+        return true;
+    }
+
+    // Write the ignore rules to the NetworkManager configuration
+    std::ofstream outFile(confFile);
+    if (!outFile.is_open())
+    {
+        std::cerr << "[-] Error: Must run as root, run the bellow command\nsudo ./nexus" << std::endl;
+        return false;
+    }
+
+    outFile << "[device-hwsim]\n";
+    outFile << "match-device=driver:mac80211_hwsim\n";
+    outFile << "managed=0\n\n";
+
+    outFile << "[keyfile]\n";
+    outFile << "unmanaged-devices=driver:mac80211_hwsim\n";
+    outFile.close();
+
+    outFile << "[device-hwsim]\n";
+    outFile << "match-device=driver:mac80211_hwsim\n";
+    outFile << "managed=0\n";
+    outFile.close();
+
+    std::cout << "[Library] Restarting NetworkManager" << std::endl;
+    SystemUtils::executeCommand("systemctl restart NetworkManager");
+
+    // Give NetworkManager 3 seconds to fully reboot before we start spawning radios
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::cout << "[Library] NetworkManager rebooted" << std::endl;
+
+    return true;
+}
+
