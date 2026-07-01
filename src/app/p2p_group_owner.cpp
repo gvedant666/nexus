@@ -44,7 +44,7 @@ void P2PGroupOwner::run()
 std::unique_ptr<sdbus::IProxy> P2PGroupOwner::setupP2PGroup(sdbus::IConnection& connection)
 {
     std::cout << "[*] Finding the correct p2p Path which supports Wifi Direct" << std::endl;
-    sdbus::ObjectPath p2pPath = sdBusP2PController::findP2PDevicePath(connection);
+    const sdbus::ObjectPath p2pPath = sdBusP2PController::findP2PDevicePath(connection);
 
     if (p2pPath.empty())
     {
@@ -73,8 +73,8 @@ std::unique_ptr<sdbus::IProxy> P2PGroupOwner::setupP2PGroup(sdbus::IConnection& 
                 auto groupProxy = sdbus::createProxy(connection, WPA_BUS_NAME, groupPath);
 
                 const auto actualInterfaceName = groupProxy->getProperty("Ifname")
-                                                            .onInterface("fi.w1.wpa_supplicant1.Interface")
-                                                            .get<std::string>();
+                                                           .onInterface("fi.w1.wpa_supplicant1.Interface")
+                                                           .get<std::string>();
 
                 std::cout << "[*] Queried True Interface Name: " << actualInterfaceName << std::endl;
 
@@ -85,6 +85,7 @@ std::unique_ptr<sdbus::IProxy> P2PGroupOwner::setupP2PGroup(sdbus::IConnection& 
     // Create empty payload bypass to avoid InvalidArgs parsing errors
     // TODO Needed to change this for Wi-Fi frequency used and other things, not yet thought of it
     std::map<std::string, sdbus::Variant> groupArgs;
+    groupArgs["persistent"] = sdbus::Variant(false);
 
     std::cout << "[*] Executing GroupAdd..." << std::endl;
 

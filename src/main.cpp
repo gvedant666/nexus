@@ -4,7 +4,11 @@
 #include <csignal>
 
 #include "app/p2p_group_owner.h"
+#include "app/p2p_client.h"
 
+// run
+// sudo rmmod mac80211_hwsim
+// After testing is done
 
 int main(int argc, char* argv[])
 {
@@ -22,6 +26,8 @@ int main(int argc, char* argv[])
     else if (mode == "client")
     {
         std::cout << "[Main] Getting into Client mode\n";
+        P2PClient client;
+        client.run();
         // TODO client;
     }
     else

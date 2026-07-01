@@ -1,14 +1,20 @@
-//
-// Created by vedant on 6/29/26.
-//
+# pragma once
+#include "sdbus-c++/sdbus-c++.h"
+#include <memory>
 
-#ifndef QCAST_P2P_CLIENT_H
-#define QCAST_P2P_CLIENT_H
-
-
-class p2p_client
+class P2PClient
 {
+public:
+
+    P2PClient();
+    virtual ~P2PClient();
+    void run();
+
+    private:
+
+    static std::shared_ptr<sdbus::IConnection> g_connection;
+
+    static std::unique_ptr<sdbus::IProxy> setupP2PClient(sdbus::IConnection& connection);
+    static void signalHandler(int signum);
+
 };
-
-
-#endif //QCAST_P2P_CLIENT_H

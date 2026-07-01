@@ -46,3 +46,8 @@ cmake_install.cmake
 **/_deps/
 .cpmcache/
 cmake/CPM_modules/
+
+# CLion and IDE build folders
+cmake-build-debug/
+cmake-build-debug/**
+.idea/

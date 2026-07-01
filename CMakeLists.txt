@@ -22,7 +22,7 @@ set(NEXUS_SOURCES
 
         # Core App Actors
         src/app/p2p_group_owner.cpp
-        # src/app/p2p_client.cpp
+        src/app/p2p_client.cpp
 
         # Network Toolbox
         src/network/network_sandbox.cpp
@@ -36,7 +36,7 @@ set(NEXUS_SOURCES
 set(NEXUS_HEADERS
         # Core App Actors
         include/app/p2p_group_owner.h
-        # include/app/p2p_client.h
+        include/app/p2p_client.h
 
         # Network Toolbox
         include/network/network_sandbox.h

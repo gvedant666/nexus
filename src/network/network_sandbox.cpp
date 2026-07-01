@@ -43,9 +43,17 @@ bool NetworkSandbox::configureNetworkManagerExclusions() {
     // Write the ignore rules to the NetworkManager configuration
     std::ofstream outFile(confFile);
     if (!outFile.is_open()) {
-        std::cerr << "[-] Error: Must run as root, run the bellow command\nsudo ./main" << std::endl;
+        std::cerr << "[-] Error: Must run as root, run the bellow command\nsudo ./nexus" << std::endl;
         return false;
     }
+
+    outFile << "[device-hwsim]\n";
+    outFile << "match-device=driver:mac80211_hwsim\n";
+    outFile << "managed=0\n\n";
+
+    outFile << "[keyfile]\n";
+    outFile << "unmanaged-devices=driver:mac80211_hwsim\n";
+    outFile.close();
 
     outFile << "[device-hwsim]\n";
     outFile << "match-device=driver:mac80211_hwsim\n";
@@ -63,19 +71,25 @@ bool NetworkSandbox::configureNetworkManagerExclusions() {
 }
 
 bool NetworkSandbox::setupEnvironment() {
-    // Clear existing virtual radios left for a fresh start
-    SystemUtils::executeCommand("rmmod mac80211_hwsim 2>/dev/null");
+    // Erase if those namespace already exist
     SystemUtils::executeCommand("ip netns del " + namespaceName + " 2>/dev/null");
 
+    // Only load the module if it isn't already loaded by another process
+    std::string moduleCheck = SystemUtils::executeAndCapture("lsmod | grep mac80211_hwsim");
+    if (moduleCheck.empty()) {
+        if (!SystemUtils::executeCommand("modprobe mac80211_hwsim radios=2")) return false;
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
     // Spawn 2 new virtual radios
-    if (!SystemUtils::executeCommand("modprobe mac80211_hwsim radios=2")) return false;
+    // if (!SystemUtils::executeCommand("modprobe mac80211_hwsim radios=1")) return false;
     if (!SystemUtils::executeCommand("ip netns add " + namespaceName)) return false;
 
     // hwsim can soft-block real Wi-Fi on load, unblock everything immediately
     SystemUtils::executeCommand("rfkill unblock wifi");
 
     // Give Linux enough time to create radio files
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(200));
     detectedPhy = SystemUtils::findVirtualWirelessDevice();
     if (detectedPhy.empty()) return false;
     std::cout << "[Library] Target mock radio successfully bound to: " << detectedPhy << std::endl;
@@ -85,34 +99,32 @@ bool NetworkSandbox::setupEnvironment() {
     if (!SystemUtils::executeCommand("ip netns exec " + namespaceName + " ip link set lo up")) return false;
 
     // Find the wlan interface name inside the newly isolated namespace
-    const std::string wlanNameCmd = "ip netns exec " + namespaceName + " iw dev | awk '$1==\"Interface\"{print $2}'";
+    const std::string wlanNameCmd =
+    "ip netns exec " + namespaceName + " iw dev | awk '/phy#" + detectedPhy.substr(3) + "$/{flag=1; next} /phy#/{flag=0} flag && $1==\"Interface\"{print $2; exit}'";
     std::string wlanName = SystemUtils::executeAndCapture(wlanNameCmd);
     wlanName.erase(wlanName.find_last_not_of(" \n\r\t") + 1);
 
     if (wlanName.empty()) {
-        std::cerr << "[-] Error: Could not locate a wireless interface inside the namespace.\n"
-                     "Check if its created or not\n"
-                     "ip netns list" << std::endl;
+        std::cerr << "[-] Error: Could not locate a wireless interface inside the namespace." << std::endl;
         return false;
     }
     std::cout << "[Library] Wireless interface mapped dynamically as: " << wlanName << std::endl;
 
+    //Forcefully cure the Airplane Mode infection INSIDE the namespace <---
+    SystemUtils::executeCommand("ip netns exec " + namespaceName + " rfkill unblock all");
+
     // Force delete any stale control sockets
-    SystemUtils::executeCommand("rm -f /var/run/wpa_supplicant/" + wlanName + " 2>/dev/null");
-    SystemUtils::executeCommand("rm -f /var/run/wpa_supplicant/p2p-dev-" + wlanName + " 2>/dev/null");
+    SystemUtils::executeCommand("ip netns exec " + namespaceName + " ip link set " + wlanName + " up");
 
     // Spawn isolated background process
-    std::string dbusCmd = "dbus-daemon --session --address=" + dbusAddress + " --fork --print-pid";
+    std::string dbusCmd = "ip netns exec " + namespaceName + " dbus-daemon --session --address=" + dbusAddress + " --fork --print-pid";
     std::string pidOutput = SystemUtils::executeAndCapture(dbusCmd);
     if (pidOutput.empty()) return false;
-    // Needed PID to track D-Bus daemon for later to be killed "kill them json, they deserver to die json"
     dbusPid = std::stoi(pidOutput);
-    // overwrite standard environment variable
     setenv("DBUS_SYSTEM_BUS_ADDRESS", dbusAddress.c_str(), 1);
 
-    // Launch Sandboxed Wi-Fi daemon
-    if (const std::string wpaCmd = "ip netns exec " + namespaceName + " wpa_supplicant -u -Dnl80211 -i " + wlanName + " -c " +
-        configPath + " -B"; !SystemUtils::executeCommand(wpaCmd)) return false;
+    std::string wpaCmd = "ip netns exec " + namespaceName + " wpa_supplicant -u -Dnl80211 -i " + wlanName + " -c " + configPath + " -B";
+    if (!SystemUtils::executeCommand(wpaCmd)) return false;
 
     std::cout << "[Library] Sandbox operational. D-Bus Isolated." << std::endl;
     return true;
@@ -131,13 +143,12 @@ void NetworkSandbox::cleanupEnvironment() const
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     // We add a tracking variable check to make sure it doesn't loop infinitely
-    const std::string forceNsDel = "ip netns del " + namespaceName + " 2>/dev/null";
-    std::system(forceNsDel.c_str());
+    // const std::string forceNsDel = "ip netns del " + namespaceName + " 2>/dev/null";
+    // std::system(forceNsDel.c_str());
 
-    SystemUtils::executeCommand("rmmod mac80211_hwsim 2>/dev/null");
-
-    // restore real Wi-Fi
-    SystemUtils::executeCommand("rfkill unblock wifi");
+    // Release the phy lock so it becomes available for the next run,
+    // but don't rmmod — the other process (owner/client) may still be using it
+    SystemUtils::executeCommand("rm -f /tmp/p2p_lock_" + detectedPhy);
 
     unsetenv("DBUS_SYSTEM_BUS_ADDRESS");
     std::cout << "[Library] System state fully restored." << std::endl;
