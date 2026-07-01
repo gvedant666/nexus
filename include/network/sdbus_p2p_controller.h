@@ -16,6 +16,7 @@ extern const sdbus::ServiceName WPA_BUS_NAME;
 extern const sdbus::ObjectPath WPA_ROOT_PATH;
 extern const sdbus::InterfaceName WPA_ROOT_IFACE;
 extern const sdbus::InterfaceName P2P_INTERFACE;
+extern const sdbus::InterfaceName WPS_INTERFACE;
 
 class sdBusP2PController
 {

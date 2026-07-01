@@ -1,10 +1,11 @@
 #include "system_utils.h"
+#include "UniqueFileLock.h"
+#include <chrono>
+#include <fcntl.h>
 #include <iostream>
 #include <memory>
-#include <thread>
-#include <chrono>
 #include <sstream>
-#include <fcntl.h>
+#include <thread>
 
 namespace SystemUtils {
 
@@ -24,16 +25,17 @@ namespace SystemUtils {
         return (status == 0);
     }
 
-    std::string findVirtualWirelessDevice() {
+    UniqueFileLock acquireVirtualWirelessDevice() {
         // Exclude phy#0 because that my Wi-Fi
-        std::string output = SystemUtils::executeAndCapture("iw dev | grep phy# | grep -v 'phy#0'");
-        if (output.empty()) return "";
+        const std::string output = SystemUtils::executeAndCapture("iw dev | grep phy# | grep -v 'phy#0'");
+        if (output.empty()) return {};
 
         std::istringstream stream(output);
         std::string line;
         while (std::getline(stream, line)) {
             const size_t pos = line.find('#');
             if (pos == std::string::npos) continue;
+
             std::string num = line.substr(pos + 1);
             num.erase(num.find_last_not_of(" \n\r\t") + 1);
             std::string phyName = "phy" + num;
@@ -43,8 +45,8 @@ namespace SystemUtils {
             int fd = open(lockPath.c_str(), O_CREAT | O_EXCL | O_RDWR, 0644);
             if (fd < 0) continue; // already claimed, try next
             close(fd);
-            return phyName;
+            return {phyName, lockPath};
         }
-        return "";
+        return {};
     }
 }

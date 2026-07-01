@@ -15,9 +15,6 @@ public:
     NetworkSandbox(const NetworkSandbox&) = delete;
     NetworkSandbox& operator=(const NetworkSandbox&) = delete;
 
-    [[nodiscard]] std::string getNamespaceName() const { return namespaceName; }
-    [[nodiscard]] std::string getPrivateDBusAddress() const { return dbusAddress; }
-
 private:
     std::string namespaceName;
     std::string configPath;
@@ -28,5 +25,4 @@ private:
     // Core internal routines
     static bool configureNetworkManagerExclusions();
     bool setupEnvironment();
-    void cleanupEnvironment() const;
 };

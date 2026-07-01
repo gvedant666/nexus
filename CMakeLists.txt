@@ -45,6 +45,8 @@ set(NEXUS_HEADERS
 
         # Utilities
         common/system_utils/system_utils.h
+        common/system_utils/scope_guard.h
+        common/system_utils/UniqueFileLock.h
 )
 
 # Build the executable

@@ -8,6 +8,7 @@ const sdbus::ServiceName WPA_BUS_NAME{"fi.w1.wpa_supplicant1"};
 const sdbus::ObjectPath WPA_ROOT_PATH{"/fi/w1/wpa_supplicant1"};
 const sdbus::InterfaceName WPA_ROOT_IFACE{"fi.w1.wpa_supplicant1"};
 const sdbus::InterfaceName P2P_INTERFACE{"fi.w1.wpa_supplicant1.Interface.P2PDevice"};
+const sdbus::InterfaceName WPS_INTERFACE{"fi.w1.wpa_supplicant1.Interface.WPS"};
 
 // Dynamic find Wi-Fi hardware interface which supports Wi-Fi Direct (P2P)
 sdbus::ObjectPath sdBusP2PController::findP2PDevicePath(sdbus::IConnection& connection)

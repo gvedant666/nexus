@@ -1,8 +1,10 @@
 #pragma once
 #include <string>
 
-namespace SystemUtils {
+#include "UniqueFileLock.h"
 
+namespace SystemUtils
+{
     /**
      * @brief Executes a Linux shell command and captures its standard output.
      */
@@ -16,5 +18,5 @@ namespace SystemUtils {
     /**
      * @brief Find Virtual Wireless Devices excluding phy#0
      */
-    std::string findVirtualWirelessDevice();
+    UniqueFileLock acquireVirtualWirelessDevice();
 }
